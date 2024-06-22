@@ -192,6 +192,7 @@ import {
   GuildScheduledEventRecurrenceRuleMonth,
   GuildScheduledEventRecurrenceRuleFrequency,
   APIPollMedia,
+  RESTAPIPollCreate,
 } from 'discord-api-types/v10';
 import { ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
@@ -6541,7 +6542,7 @@ export interface BaseMessageOptions {
 }
 
 export interface BaseMessageOptionsWithPoll extends BaseMessageOptions {
-  poll?: PollData;
+  poll?: JSONEncodable<RESTAPIPollCreate> | PollData;
 }
 
 export interface MessageCreateOptions extends BaseMessageOptionsWithPoll {
