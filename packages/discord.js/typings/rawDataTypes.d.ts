@@ -148,8 +148,6 @@ export type RawInviteData =
   | (GatewayInviteCreateDispatchData & { channel: GuildChannel; guild: Guild })
   | (GatewayInviteDeleteDispatchData & { channel: GuildChannel; guild: Guild });
 
-export type RawInviteStageInstance = APIInviteStageInstance;
-
 export type RawMessageData = APIMessage;
 export type RawPartialMessageData = GatewayMessageUpdateDispatchData;
 
