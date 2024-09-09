@@ -104,6 +104,7 @@ import {
   Collector,
   GuildAuditLogsEntry,
   GuildAuditLogs,
+  type AuditLogChange,
   StageInstance,
   ActionRowBuilder,
   ButtonComponent,
@@ -205,6 +206,10 @@ import {
   ChannelSelectMenuComponent,
   MentionableSelectMenuComponent,
   Poll,
+  ApplicationEmoji,
+  ApplicationEmojiManager,
+  StickerPack,
+  SendableChannels,
 } from '.';
 import { expectAssignable, expectDeprecated, expectNotAssignable, expectNotType, expectType } from 'tsd';
 import type { ContextMenuCommandBuilder, SlashCommandBuilder } from '@discordjs/builders';
@@ -226,6 +231,10 @@ const client: Client = new Client({
     GuildMemberManager: {
       maxSize: 200,
       keepOverLimit: member => member.id === client.user?.id,
+    },
+    ThreadManager: {
+      maxSize: 200,
+      keepOverLimit: value => !value.archived,
     },
   }),
 });
@@ -444,7 +453,7 @@ client.on('messageCreate', async message => {
     expectType<Collection<Snowflake, GuildMember>>(message.mentions.members);
   }
 
-  expectType<TextBasedChannel>(message.channel);
+  expectType<Exclude<TextBasedChannel, PartialGroupDMChannel>>(message.channel);
   expectNotType<GuildTextBasedChannel>(message.channel);
 
   // @ts-expect-error
@@ -1294,6 +1303,10 @@ client.on('guildCreate', async g => {
   );
 });
 
+// EventEmitter static method overrides
+expectType<Promise<[Client<true>]>>(Client.once(client, 'ready'));
+expectType<AsyncIterableIterator<[Client<true>]>>(Client.on(client, 'ready'));
+
 client.login('absolutely-valid-token');
 
 declare const loggedInClient: Client<true>;
@@ -1612,7 +1625,7 @@ declare const guildChannelManager: GuildChannelManager;
   expectType<Promise<Collection<Snowflake, Message>>>(messages.fetchPinned());
   expectType<Guild | null>(message.guild);
   expectType<Snowflake | null>(message.guildId);
-  expectType<DMChannel | GuildTextBasedChannel>(message.channel.messages.channel);
+  expectType<DMChannel | PartialGroupDMChannel | GuildTextBasedChannel>(message.channel.messages.channel);
   expectType<MessageMentions>(message.mentions);
   expectType<Guild | null>(message.mentions.guild);
   expectType<Collection<Snowflake, GuildMember> | null>(message.mentions.members);
@@ -1693,6 +1706,11 @@ declare const guildEmojiManager: GuildEmojiManager;
 expectType<Promise<Collection<Snowflake, GuildEmoji>>>(guildEmojiManager.fetch());
 expectType<Promise<Collection<Snowflake, GuildEmoji>>>(guildEmojiManager.fetch(undefined, {}));
 expectType<Promise<GuildEmoji>>(guildEmojiManager.fetch('0'));
+
+declare const applicationEmojiManager: ApplicationEmojiManager;
+expectType<Promise<Collection<Snowflake, ApplicationEmoji>>>(applicationEmojiManager.fetch());
+expectType<Promise<Collection<Snowflake, ApplicationEmoji>>>(applicationEmojiManager.fetch(undefined, {}));
+expectType<Promise<ApplicationEmoji>>(applicationEmojiManager.fetch('0'));
 
 declare const guildBanManager: GuildBanManager;
 {
@@ -2171,6 +2189,16 @@ expectType<Promise<User | undefined>>(
   guild.fetchAuditLogs({ type: AuditLogEvent.MessageDelete }).then(al => al.entries.first()?.target),
 );
 
+declare const AuditLogChange: AuditLogChange;
+// @ts-expect-error
+expectType<boolean | undefined>(AuditLogChange.old);
+// @ts-expect-error
+expectType<boolean | undefined>(AuditLogChange.new);
+if (AuditLogChange.key === 'available') {
+  expectType<boolean | undefined>(AuditLogChange.old);
+  expectType<boolean | undefined>(AuditLogChange.new);
+}
+
 declare const TextBasedChannel: TextBasedChannel;
 declare const TextBasedChannelTypes: TextBasedChannelTypes;
 declare const VoiceBasedChannel: VoiceBasedChannel;
@@ -2182,6 +2210,7 @@ expectType<TextBasedChannel>(TextBasedChannel);
 expectType<
   | ChannelType.GuildText
   | ChannelType.DM
+  | ChannelType.GroupDM
   | ChannelType.GuildAnnouncement
   | ChannelType.GuildVoice
   | ChannelType.GuildStageVoice
@@ -2561,3 +2590,21 @@ declare const poll: Poll;
     answerId: 1,
   });
 }
+
+expectType<Collection<Snowflake, StickerPack>>(await client.fetchStickerPacks());
+expectType<Collection<Snowflake, StickerPack>>(await client.fetchStickerPacks({}));
+expectType<StickerPack>(await client.fetchStickerPacks({ packId: snowflake }));
+
+client.on('interactionCreate', interaction => {
+  if (!interaction.channel) {
+    return;
+  }
+
+  // @ts-expect-error
+  interaction.channel.send();
+
+  if (interaction.channel.isSendable()) {
+    expectType<SendableChannels>(interaction.channel);
+    interaction.channel.send({ embeds: [] });
+  }
+});
