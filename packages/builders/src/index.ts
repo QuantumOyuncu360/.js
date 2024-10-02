@@ -60,6 +60,9 @@ export * from './messages/embed/EmbedAuthor.js';
 export * from './messages/embed/EmbedField.js';
 export * from './messages/embed/EmbedFooter.js';
 
+export * from './messages/poll/Assertions.js';
+export * from './messages/poll/Poll.js';
+
 export * from './util/componentUtil.js';
 export * from './util/normalizeArray.js';
 export * from './util/validation.js';
